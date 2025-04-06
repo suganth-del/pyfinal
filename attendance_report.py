@@ -1,22 +1,42 @@
+import csv  # using csv module to work with csv files
 
-import pandas as pd
+# making a dictionary to keep track of how many times each student was present or absent
+attendance = {}
 
-# Load the attendance CSV file
-df = pd.read_csv("attendance.csv")
+# opening the attendance file
+with open("attendance.csv", "r") as file:
+    reader = csv.DictReader(file)  # this reads the file with column names
 
-# Group by student and count status
-summary = df.groupby(['Student Name', 'Status']).size().unstack(fill_value=0)
+    # looping through each row to count attendance
+    for row in reader:
+        name = row["Student Name"]
+        status = row["Status"]
 
-# Fill missing columns if needed
-if 'Present' not in summary.columns:
-    summary['Present'] = 0
-if 'Absent' not in summary.columns:
-    summary['Absent'] = 0
+        # if student not already added, we create a slot for them
+        if name not in attendance:
+            attendance[name] = {"Present": 0, "Absent": 0}
 
-# Save the summary to a new CSV
-summary_path = "attendance_summary.csv"
-summary.to_csv(summary_path)
+        # now we check status and add to the right count
+        if status == "Present":
+            attendance[name]["Present"] += 1
+        elif status == "Absent":
+            attendance[name]["Absent"] += 1
 
-# Also print the summary in a readable format
-print("Attendance Summary:")
-print(summary)
+# now we write the result into a new file
+with open("attendance_summary.csv", "w", newline="") as file:
+    fieldnames = ["Student Name", "Present", "Absent"]
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+    writer.writeheader()
+
+    # writing each student's summary
+    for name, data in attendance.items():
+        writer.writerow({
+            "Student Name": name,
+            "Present": data["Present"],
+            "Absent": data["Absent"]
+        })
+
+# also print the summary so I can see it quickly in terminal
+print("Here’s the final attendance count:")
+for name, data in attendance.items():
+    print(f"{name} => Present: {data['Present']} | Absent: {data['Absent']}")
